@@ -7,6 +7,7 @@ import sys
 from .._ffi import new, unwrap
 from ._core_foundation import CoreFoundation, CFHelpers
 from ._security import Security, SecurityConst, handle_sec_error
+from ...asn1crypto import x509
 
 if sys.version_info < (3,):
     range = xrange  # noqa
@@ -68,9 +69,6 @@ def extract_from_system():
         res = Security.SecTrustSettingsCopyCertificates(domain, cert_trust_settings_pointer_pointer)
         if res == SecurityConst.errSecNoTrustSettings:
             continue
-        if res == SecurityConst.errSecInvalidTrustSettings:
-            print('OSCRYPTO: Error with trust settings %d' % domain)
-            continue
         handle_sec_error(res)
 
         cert_trust_settings_pointer = unwrap(cert_trust_settings_pointer_pointer)
@@ -85,6 +83,14 @@ def extract_from_system():
             # the Security Framework Reference, the lack of any settings should
             # indicate "always strut this certificate"
             if res == SecurityConst.errSecItemNotFound:
+                continue
+            if res == SecurityConst.errSecInvalidTrustSettings:
+                print('OSCRYPTO: Error with cert trust settings')
+                data_pointer = Security.SecCertificateCopyData(cert_pointer)
+                der_cert = CFHelpers.cf_data_to_bytes(data_pointer)
+                CoreFoundation.CFRelease(data_pointer)
+                asn1cert = x509.Certificate.load(der_cert)
+                print(asn1cert.subject.native)
                 continue
             handle_sec_error(res)
 
