@@ -68,6 +68,9 @@ def extract_from_system():
         res = Security.SecTrustSettingsCopyCertificates(domain, cert_trust_settings_pointer_pointer)
         if res == SecurityConst.errSecNoTrustSettings:
             continue
+        if res == SecurityConst.errSecInvalidTrustSettings:
+            print('OSCRYPTO: Error with trust settings %d' % domain)
+            continue
         handle_sec_error(res)
 
         cert_trust_settings_pointer = unwrap(cert_trust_settings_pointer_pointer)
